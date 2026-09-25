@@ -12,20 +12,19 @@ This system integrates data exploration, class imbalance correction (SMOTE-ENN),
 
 ---
 
-## 📑 Table of Contents
-- [Architecture Overview](#-architecture-overview)
-- [Project Structure](#-project-structure)
-- [Clinical Parameters (15 Features)](#-clinical-parameters-15-features)
-- [Machine Learning Pipeline](#-machine-learning-pipeline)
-- [Quick Start Guide](#-quick-start-guide)
+## Table of Contents
+- [Architecture Overview](#architecture-overview)
+- [Project Structure](#project-structure)
+- [Clinical Parameters (15 Features)](#clinical-parameters-15-features)
+- [Quick Start Guide](#quick-start-guide)
   - [1. Machine Learning Notebooks](#1-machine-learning-notebooks)
   - [2. Starting the API Backend](#2-starting-the-api-backend)
   - [3. Starting the Frontend UI](#3-starting-the-frontend-ui)
-- [Ethical & Clinical Disclaimer](#-ethical--clinical-disclaimer)
+- [Ethical & Clinical Disclaimer](#ethical--clinical-disclaimer)
 
 ---
 
-## 🏛 Architecture Overview
+## Architecture Overview
 
 ```text
 ┌─────────────────────────┐         ┌─────────────────────────┐
@@ -46,7 +45,7 @@ This system integrates data exploration, class imbalance correction (SMOTE-ENN),
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 Heart-Disease-Prediction/
@@ -100,7 +99,7 @@ Heart-Disease-Prediction/
 
 ---
 
-## 🩺 Clinical Parameters (15 Features)
+## Clinical Parameters (15 Features)
 
 The prediction engine consumes 15 validated biometric and demographic inputs:
 
@@ -124,7 +123,7 @@ The prediction engine consumes 15 validated biometric and demographic inputs:
 
 ---
 
-## 🚀 Quick Start Guide
+## Quick Start Guide
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18+)
@@ -176,6 +175,6 @@ Open [http://localhost:3001](http://localhost:3001) in your browser.
 
 ---
 
-## ⚖️ Ethical & Clinical Disclaimer
+## Ethical & Clinical Disclaimer
 
 > **Important:** This system is developed for academic research, education, and algorithmic demonstration using the Framingham Heart Study dataset. It is **not** a certified medical diagnostic device and must not be used as a substitute for professional medical evaluation, diagnosis, or clinical advice.
