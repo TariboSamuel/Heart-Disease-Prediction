@@ -1,0 +1,9 @@
+graph TD
+    A[Data Collection: Framingham Dataset] --> B[Data Preprocessing]
+    B --> C[Resampling: SMOTE-ENN]
+    C --> D[Model Training: Logistic Regression, RF, XGBoost]
+    D --> E[Hyperparameter Tuning]
+    E --> F[Performance Evaluation]
+    F --> G["Explainability Analysis: SHAP 'and' LIME"]
+    G --> H[Final Model Selection]
+    H --> I[Deployment Preparation]

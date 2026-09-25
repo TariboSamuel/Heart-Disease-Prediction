@@ -1,0 +1,36 @@
+{
+    "model_name": "Final Coronary Heart Disease Prediction Model",
+    "file_name": "final_chd_model.pkl",
+    "algorithm": "Extreme Gradient Boosting (XGBoost)",
+    "model_type": "Binary Classification",
+    "target_variable": "TenYearCHD",
+    "number_of_features": 15,
+    "feature_names": [
+        "male",
+        "age",
+        "education",
+        "currentSmoker",
+        "cigsPerDay",
+        "BPMeds",
+        "prevalentStroke",
+        "prevalentHyp",
+        "diabetes",
+        "totChol",
+        "sysBP",
+        "diaBP",
+        "BMI",
+        "heartRate",
+        "glucose"
+    ],
+    "pipeline_components": [
+        "resampler",
+        "model"
+    ],
+    "metrics": {
+        "accuracy": 0.672,
+        "precision": 0.254,
+        "recall": 0.597,
+        "f1_score": 0.356,
+        "roc_auc": 0.667
+    }
+}

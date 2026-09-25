@@ -1,0 +1,21 @@
+# Core Data Manipulation
+pandas
+numpy
+
+# Data Visualization
+matplotlib
+seaborn
+
+# Machine Learning & Modeling
+scikit-learn
+xgboost
+
+# Class Imbalance Handling
+imbalanced-learn
+
+# Explainable AI (XAI) for Model Evaluation
+shap
+lime
+
+# Model Serialization (Exporting/Saving)
+joblib
