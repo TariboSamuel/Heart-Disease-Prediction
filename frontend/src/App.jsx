@@ -9,7 +9,7 @@ function App() {
     // Check if the backend API is up on port 3000
     const checkApi = async () => {
       try {
-        const res = await fetch('http://localhost:3000/');
+        const res = await fetch('http://localhost:3000/', { signal: AbortSignal.timeout(1000) });
         if (res.ok) {
           setApiOnline(true);
         } else {
@@ -61,24 +61,18 @@ function App() {
                 className={`w-2 h-2 rounded-full ${
                   apiOnline === true
                     ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]'
-                    : apiOnline === false
-                    ? 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'
-                    : 'bg-amber-400'
+                    : 'bg-cyan-400 shadow-[0_0_8px_#22d3ee]'
                 }`}
               ></span>
               <span className="text-slate-300 text-[11px] font-medium hidden sm:inline">
-                API Engine:
+                Engine:
               </span>
               <span
                 className={`text-[11px] font-semibold ${
-                  apiOnline === true
-                    ? 'text-emerald-400'
-                    : apiOnline === false
-                    ? 'text-rose-400'
-                    : 'text-amber-400'
+                  apiOnline === true ? 'text-emerald-400' : 'text-cyan-300'
                 }`}
               >
-                {apiOnline === true ? 'Online (Port 3000)' : apiOnline === false ? 'Offline' : 'Connecting...'}
+                {apiOnline === true ? 'API Connected (Port 3000)' : 'Client-Side Offline Mode Active'}
               </span>
             </div>
           </div>
@@ -93,7 +87,7 @@ function App() {
             <svg className="w-3.5 h-3.5 text-rose-500" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
             </svg>
-            Empowered by Machine Learning &amp; Clinical Epidemiology
+            Machine Learning &amp; Clinical Epidemiology
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
             Predict &amp; Prevent Cardiovascular Events
@@ -113,8 +107,8 @@ function App() {
               <div className="text-[10px] text-slate-400 uppercase tracking-wider">Horizon Risk</div>
             </div>
             <div className="p-3 rounded-xl glass-panel text-center">
-              <div className="text-lg sm:text-xl font-bold text-emerald-400">Calibrated</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider">Logistic Engine</div>
+              <div className="text-lg sm:text-xl font-bold text-emerald-400">Offline Ready</div>
+              <div className="text-[10px] text-slate-400 uppercase tracking-wider">Zero Backend Needed</div>
             </div>
           </div>
         </div>
@@ -127,7 +121,7 @@ function App() {
       <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950/80 backdrop-blur-md py-6 text-center text-xs text-slate-500">
         <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div>
-            Heart Disease Prediction System &copy; {new Date().getFullYear()} &bull; Framingham Heart Study ML Implementation
+            Heart Disease Prediction System &bull; Framingham Heart Study ML Implementation
           </div>
           <div className="flex items-center gap-4 text-slate-400">
             <span>FastAPI / Express Microservice</span>

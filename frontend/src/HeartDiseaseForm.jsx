@@ -1,5 +1,88 @@
 import React, { useState } from 'react';
 
+// Exact Framingham Logistic Regression Model Parameters from lr_model_export.json
+const MODEL_DATA = {
+  featureNames: [
+    'male', 'age', 'education', 'currentSmoker', 'cigsPerDay',
+    'BPMeds', 'prevalentStroke', 'prevalentHyp', 'diabetes',
+    'totChol', 'sysBP', 'diaBP', 'BMI', 'heartRate', 'glucose'
+  ],
+  coefficients: [
+    0.1976899975098723,
+    0.6130730649173718,
+    -0.019778744486855834,
+    0.03224028448881475,
+    0.2561469992712857,
+    0.09124211651596958,
+    0.089346086097334,
+    0.06775058791975767,
+    0.054243918198460694,
+    0.11009048241235218,
+    0.25625169208499515,
+    0.04462008336909769,
+    0.03262013914881636,
+    -0.040694020625526336,
+    0.12139546059121277
+  ],
+  intercept: -0.2820954698460423,
+  scalerMean: [
+    0.42865566037735847,
+    49.66391509433962,
+    1.9831957547169812,
+    0.49204009433962265,
+    8.959021226415095,
+    0.02830188679245283,
+    0.006485849056603774,
+    0.310436320754717,
+    0.025943396226415096,
+    236.67010613207546,
+    132.43985849056602,
+    82.8841391509434,
+    25.824640330188682,
+    75.89121462264151,
+    81.58844339622641
+  ],
+  scalerScale: [
+    0.4948838098016636,
+    8.571715760985699,
+    1.01260367481366,
+    0.49993663588686715,
+    11.918123090666015,
+    0.16583392293629196,
+    0.0802731762086111,
+    0.46267225063860423,
+    0.15896646318847987,
+    43.953501939797185,
+    22.032912045109295,
+    11.892166919728076,
+    4.115361085441004,
+    12.007206687643308,
+    22.955488274410705
+  ]
+};
+
+// Pure in-browser client calculation
+function calculateOffline(inputData) {
+  const scaled = MODEL_DATA.featureNames.map((name, i) => {
+    return (inputData[name] - MODEL_DATA.scalerMean[i]) / MODEL_DATA.scalerScale[i];
+  });
+
+  let z = MODEL_DATA.intercept;
+  for (let i = 0; i < scaled.length; i++) {
+    z += scaled[i] * MODEL_DATA.coefficients[i];
+  }
+
+  const probability = 1 / (1 + Math.exp(-z));
+  const prediction = probability >= 0.5 ? 1 : 0;
+
+  return {
+    prediction,
+    probability,
+    risk: prediction === 1 ? 'High Risk' : 'Low Risk',
+    source: 'in-browser (offline engine)'
+  };
+}
+
 const PRESETS = {
   low: {
     male: 0,
@@ -76,7 +159,6 @@ const HeartDiseaseForm = () => {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [loading, setLoading] = useState(false);
   const [prediction, setPrediction] = useState(null);
-  const [apiError, setApiError] = useState(null);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => {
@@ -91,50 +173,60 @@ const HeartDiseaseForm = () => {
   const applyPreset = (key) => {
     setFormData(PRESETS[key]);
     setPrediction(null);
-    setApiError(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setApiError(null);
 
-    // Ensure all 15 parameters are passed as valid Numbers
+    // Cast all 15 parameters to valid Numbers
     const payload = {};
     for (const key of Object.keys(INITIAL_FORM)) {
       payload[key] = Number(formData[key]);
     }
 
     try {
+      // Attempt backend API with a short timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1200);
+
       const response = await fetch('http://localhost:3000/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Prediction calculation failed');
+      if (response.ok) {
+        const data = await response.json();
+        setPrediction({
+          risk: data.risk,
+          probability: Number(data.probability),
+          confidence: (Number(data.probability) * 100).toFixed(1),
+          predictionVal: data.prediction,
+          inputs: { ...payload },
+          source: 'Express API (Port 3000)'
+        });
+      } else {
+        throw new Error('API request not ok');
       }
-
-      setPrediction({
-        risk: data.risk,
-        probability: Number(data.probability),
-        confidence: (Number(data.probability) * 100).toFixed(1),
-        predictionVal: data.prediction,
-        inputs: { ...payload }
-      });
     } catch (err) {
-      console.error('API Error:', err);
-      setApiError(
-        err.message || 'Unable to connect to prediction service on port 3000.'
-      );
+      // Fallback: Calculate in-browser with exact mathematical fidelity
+      const offlineResult = calculateOffline(payload);
+      setPrediction({
+        risk: offlineResult.risk,
+        probability: Number(offlineResult.probability),
+        confidence: (Number(offlineResult.probability) * 100).toFixed(1),
+        predictionVal: offlineResult.prediction,
+        inputs: { ...payload },
+        source: 'In-Browser Engine (Offline)'
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Identify elevated clinical metrics to show in risk breakdown
   const getRiskBreakdown = (data) => {
     const alerts = [];
     if (data.sysBP >= 140 || data.diaBP >= 90) {
@@ -170,7 +262,7 @@ const HeartDiseaseForm = () => {
       {/* Top Banner / Test Profiles */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-4 rounded-xl glass-panel">
         <div className="flex items-center gap-2">
-          <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
           <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">
             Quick-Test Patient Profiles:
           </span>
@@ -205,7 +297,6 @@ const HeartDiseaseForm = () => {
             onClick={() => {
               setFormData(INITIAL_FORM);
               setPrediction(null);
-              setApiError(null);
             }}
             className="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all"
           >
@@ -348,7 +439,7 @@ const HeartDiseaseForm = () => {
                     : 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700'
                 }`}>
                   <span className="text-xs font-semibold mb-1">BP Meds</span>
-                  <span className="text-[11px] text-slate-400 mb-2">On anti-hypertensives</span>
+                  <span className="text-[11px] text-slate-400 mb-2">Anti-hypertensives</span>
                   <input
                     type="checkbox"
                     checked={formData.BPMeds === 1}
@@ -518,22 +609,6 @@ const HeartDiseaseForm = () => {
               </div>
             </div>
 
-            {/* Error Message */}
-            {apiError && (
-              <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-3">
-                <svg className="w-5 h-5 flex-shrink-0 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                  <strong className="font-semibold block mb-0.5">Connection Error:</strong>
-                  {apiError}
-                  <span className="block mt-1 text-slate-400">
-                    Make sure the prediction API is running (`node codes/api/server.js`) on port 3000.
-                  </span>
-                </div>
-              </div>
-            )}
-
             {/* Submit Button */}
             <button
               type="submit"
@@ -563,12 +638,19 @@ const HeartDiseaseForm = () => {
         {/* Results Panel */}
         <div className="lg:col-span-5 xl:col-span-4 sticky top-6">
           <div className="glass-card rounded-2xl p-6 sm:p-7 border border-slate-800">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-              <svg className="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              Predictive Diagnostics
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                <svg className="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Predictive Diagnostics
+              </h3>
+              {prediction && (
+                <span className="text-[10px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  {prediction.source}
+                </span>
+              )}
+            </div>
 
             {!prediction ? (
               <div className="text-center py-12 px-4 rounded-xl border border-dashed border-slate-800/80 bg-slate-900/30">
