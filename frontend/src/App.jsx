@@ -6,10 +6,10 @@ function App() {
   const [apiOnline, setApiOnline] = useState(null);
 
   useEffect(() => {
-    // Check if the backend API is up on port 3000
+    // Check if the backend API is up on port 5000
     const checkApi = async () => {
       try {
-        const res = await fetch('http://localhost:3000/', { signal: AbortSignal.timeout(1000) });
+        const res = await fetch('http://localhost:5000/', { signal: AbortSignal.timeout(1000) });
         if (res.ok) {
           setApiOnline(true);
         } else {
@@ -45,11 +45,11 @@ function App() {
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-lg tracking-tight text-white">CardioPulse</span>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                  AI Diagnostic
+                  Clinical ML Risk Model
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
-                Framingham 10-Year Coronary Heart Disease Risk Predictor
+                Framingham 10-Year Coronary Heart Disease Risk Estimator
               </p>
             </div>
           </div>
@@ -65,14 +65,14 @@ function App() {
                 }`}
               ></span>
               <span className="text-slate-300 text-[11px] font-medium hidden sm:inline">
-                Engine:
+                Dual Engine:
               </span>
               <span
                 className={`text-[11px] font-semibold ${
                   apiOnline === true ? 'text-emerald-400' : 'text-cyan-300'
                 }`}
               >
-                {apiOnline === true ? 'API Connected (Port 3000)' : 'Client-Side Offline Mode Active'}
+                {apiOnline === true ? 'API Connected (Port 5000)' : 'Client-Side Engine Active'}
               </span>
             </div>
           </div>
@@ -90,10 +90,10 @@ function App() {
             Machine Learning &amp; Clinical Epidemiology
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
-            Predict &amp; Prevent Cardiovascular Events
+            Estimate 10-Year Coronary Heart Disease Risk
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl mx-auto">
-            Interactive risk calculator calibrated on the Framingham Heart Study cohort to forecast 10-year risk of developing coronary heart disease.
+            Interactive risk estimator developed and evaluated using the Framingham Heart Study dataset to forecast statistical 10-year risk of coronary heart disease.
           </p>
 
           {/* Quick Metrics Bar */}
@@ -104,11 +104,11 @@ function App() {
             </div>
             <div className="p-3 rounded-xl glass-panel text-center">
               <div className="text-lg sm:text-xl font-bold text-rose-400">10-Year</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider">Horizon Risk</div>
+              <div className="text-[10px] text-slate-400 uppercase tracking-wider">Prediction Horizon</div>
             </div>
             <div className="p-3 rounded-xl glass-panel text-center">
-              <div className="text-lg sm:text-xl font-bold text-emerald-400">Offline Ready</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider">Zero Backend Needed</div>
+              <div className="text-lg sm:text-xl font-bold text-emerald-400">Dual Engine</div>
+              <div className="text-[10px] text-slate-400 uppercase tracking-wider">Browser &amp; REST API</div>
             </div>
           </div>
         </div>
@@ -121,10 +121,10 @@ function App() {
       <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950/80 backdrop-blur-md py-6 text-center text-xs text-slate-500">
         <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div>
-            Heart Disease Prediction System &bull; Framingham Heart Study ML Implementation
+            Heart Disease Prediction Research System &bull; Framingham Heart Study Dataset Implementation
           </div>
           <div className="flex items-center gap-4 text-slate-400">
-            <span>FastAPI / Express Microservice</span>
+            <span>Express API (Port 5000)</span>
             <span>&bull;</span>
             <span>React &amp; Tailwind</span>
           </div>

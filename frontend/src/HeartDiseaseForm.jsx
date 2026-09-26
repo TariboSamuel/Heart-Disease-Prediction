@@ -61,7 +61,7 @@ const MODEL_DATA = {
   ]
 };
 
-// Pure in-browser client calculation
+// Pure in-browser client calculation with identical weights
 function calculateOffline(inputData) {
   const scaled = MODEL_DATA.featureNames.map((name, i) => {
     return (inputData[name] - MODEL_DATA.scalerMean[i]) / MODEL_DATA.scalerScale[i];
@@ -79,61 +79,70 @@ function calculateOffline(inputData) {
     prediction,
     probability,
     risk: prediction === 1 ? 'High Risk' : 'Low Risk',
-    source: 'in-browser (offline engine)'
+    source: 'In-Browser Engine (Offline)'
   };
 }
 
-const PRESETS = {
+const DEMO_PROFILES = {
   low: {
-    male: 0,
-    age: 38,
-    education: 3,
-    currentSmoker: 0,
-    cigsPerDay: 0,
-    BPMeds: 0,
-    prevalentStroke: 0,
-    prevalentHyp: 0,
-    diabetes: 0,
-    totChol: 180,
-    sysBP: 116,
-    diaBP: 76,
-    BMI: 22.8,
-    heartRate: 68,
-    glucose: 84
+    name: 'Low-Risk Demo Profile',
+    data: {
+      male: 0,
+      age: 38,
+      education: 3,
+      currentSmoker: 0,
+      cigsPerDay: 0,
+      BPMeds: 0,
+      prevalentStroke: 0,
+      prevalentHyp: 0,
+      diabetes: 0,
+      totChol: 180,
+      sysBP: 116,
+      diaBP: 76,
+      BMI: 22.8,
+      heartRate: 68,
+      glucose: 84
+    }
   },
   borderline: {
-    male: 1,
-    age: 52,
-    education: 2,
-    currentSmoker: 1,
-    cigsPerDay: 12,
-    BPMeds: 0,
-    prevalentStroke: 0,
-    prevalentHyp: 1,
-    diabetes: 0,
-    totChol: 235,
-    sysBP: 138,
-    diaBP: 88,
-    BMI: 27.4,
-    heartRate: 76,
-    glucose: 96
+    name: 'Moderate-Risk Demo Profile',
+    data: {
+      male: 1,
+      age: 52,
+      education: 2,
+      currentSmoker: 1,
+      cigsPerDay: 12,
+      BPMeds: 0,
+      prevalentStroke: 0,
+      prevalentHyp: 1,
+      diabetes: 0,
+      totChol: 235,
+      sysBP: 138,
+      diaBP: 88,
+      BMI: 27.4,
+      heartRate: 76,
+      glucose: 96
+    }
   },
   high: {
-    male: 1,
-    age: 63,
-    education: 1,
-    currentSmoker: 1,
-    cigsPerDay: 25,
-    BPMeds: 1,
-    prevalentStroke: 1,
-    prevalentHyp: 1,
-    diabetes: 1,
-    totChol: 288,
-    sysBP: 168,
-    diaBP: 104,
-    BMI: 32.5,
-    heartRate: 88,
-    glucose: 148
+    name: 'Higher-Risk Demo Profile',
+    data: {
+      male: 1,
+      age: 63,
+      education: 1,
+      currentSmoker: 1,
+      cigsPerDay: 25,
+      BPMeds: 1,
+      prevalentStroke: 1,
+      prevalentHyp: 1,
+      diabetes: 1,
+      totChol: 288,
+      sysBP: 168,
+      diaBP: 104,
+      BMI: 32.5,
+      heartRate: 88,
+      glucose: 148
+    }
   }
 };
 
@@ -170,8 +179,8 @@ const HeartDiseaseForm = () => {
     });
   };
 
-  const applyPreset = (key) => {
-    setFormData(PRESETS[key]);
+  const applyProfile = (key) => {
+    setFormData(DEMO_PROFILES[key].data);
     setPrediction(null);
   };
 
@@ -186,11 +195,11 @@ const HeartDiseaseForm = () => {
     }
 
     try {
-      // Attempt backend API with a short timeout
+      // Attempt backend API on Port 5000 with a short timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 1200);
 
-      const response = await fetch('http://localhost:3000/predict', {
+      const response = await fetch('http://localhost:5000/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -205,20 +214,22 @@ const HeartDiseaseForm = () => {
           probability: Number(data.probability),
           confidence: (Number(data.probability) * 100).toFixed(1),
           predictionVal: data.prediction,
+          threshold: 0.50,
           inputs: { ...payload },
-          source: 'Express API (Port 3000)'
+          source: 'Express API (Port 5000)'
         });
       } else {
         throw new Error('API request not ok');
       }
     } catch (err) {
-      // Fallback: Calculate in-browser with exact mathematical fidelity
+      // Fallback: In-browser calculation with identical mathematical fidelity
       const offlineResult = calculateOffline(payload);
       setPrediction({
         risk: offlineResult.risk,
         probability: Number(offlineResult.probability),
         confidence: (Number(offlineResult.probability) * 100).toFixed(1),
         predictionVal: offlineResult.prediction,
+        threshold: 0.50,
         inputs: { ...payload },
         source: 'In-Browser Engine (Offline)'
       });
@@ -230,12 +241,12 @@ const HeartDiseaseForm = () => {
   const getRiskBreakdown = (data) => {
     const alerts = [];
     if (data.sysBP >= 140 || data.diaBP >= 90) {
-      alerts.push({ label: 'Hypertensive BP', desc: `${data.sysBP}/${data.diaBP} mmHg (Target: <120/80)`, level: 'high' });
+      alerts.push({ label: 'Hypertensive BP', desc: `${data.sysBP}/${data.diaBP} mmHg (Guideline: <120/80)`, level: 'high' });
     } else if (data.sysBP >= 130 || data.diaBP >= 80) {
       alerts.push({ label: 'Prehypertension', desc: `${data.sysBP}/${data.diaBP} mmHg`, level: 'warn' });
     }
     if (data.totChol >= 240) {
-      alerts.push({ label: 'High Total Cholesterol', desc: `${data.totChol} mg/dL (Optimal: <200)`, level: 'high' });
+      alerts.push({ label: 'High Total Cholesterol', desc: `${data.totChol} mg/dL (Guideline: <200)`, level: 'high' });
     } else if (data.totChol >= 200) {
       alerts.push({ label: 'Borderline High Cholesterol', desc: `${data.totChol} mg/dL`, level: 'warn' });
     }
@@ -243,10 +254,10 @@ const HeartDiseaseForm = () => {
       alerts.push({ label: 'Active Smoker', desc: `${data.cigsPerDay} cigarettes/day`, level: 'high' });
     }
     if (data.diabetes === 1 || data.glucose >= 126) {
-      alerts.push({ label: 'Elevated Fasting Glucose', desc: `${data.glucose} mg/dL (Normal: <100)`, level: 'high' });
+      alerts.push({ label: 'Elevated Fasting Glucose', desc: `${data.glucose} mg/dL (Guideline: <100)`, level: 'high' });
     }
     if (data.BMI >= 30) {
-      alerts.push({ label: 'Obese BMI Range', desc: `${data.BMI} kg/m² (Normal: 18.5-24.9)`, level: 'warn' });
+      alerts.push({ label: 'Obese BMI Range', desc: `${data.BMI} kg/m² (Guideline: 18.5-24.9)`, level: 'warn' });
     }
     if (data.prevalentHyp === 1) {
       alerts.push({ label: 'History of Hypertension', desc: 'Diagnosed hypertension history', level: 'warn' });
@@ -261,36 +272,41 @@ const HeartDiseaseForm = () => {
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6">
       {/* Top Banner / Test Profiles */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-4 rounded-xl glass-panel">
-        <div className="flex items-center gap-2">
-          <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
-          <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">
-            Quick-Test Patient Profiles:
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+            <span className="text-xs uppercase tracking-wider font-semibold text-slate-300">
+              Demo Patient Profiles
+            </span>
+          </div>
+          <span className="text-[11px] text-slate-400">
+            Fictional profiles for testing application behavior
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => applyPreset('low')}
+            onClick={() => applyProfile('low')}
             className="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all flex items-center gap-1.5"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            Low Risk Patient
+            Low-Risk Demo Profile
           </button>
           <button
             type="button"
-            onClick={() => applyPreset('borderline')}
+            onClick={() => applyProfile('borderline')}
             className="px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30 transition-all flex items-center gap-1.5"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-            Moderate / Borderline
+            Moderate-Risk Demo Profile
           </button>
           <button
             type="button"
-            onClick={() => applyPreset('high')}
+            onClick={() => applyProfile('high')}
             className="px-3 py-1.5 text-xs font-medium rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30 transition-all flex items-center gap-1.5"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-            High Risk Patient
+            Higher-Risk Demo Profile
           </button>
           <button
             type="button"
@@ -322,10 +338,10 @@ const HeartDiseaseForm = () => {
                 <span className="text-xs font-bold uppercase tracking-wider">Clinical Assessment Form</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                10-Year Coronary Heart Disease Risk
+                10-Year Coronary Heart Disease Risk Estimation
               </h2>
               <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                Enter patient demographic, lifestyle, and biochemical parameters to evaluate 10-year CHD probability.
+                Enter demographic, lifestyle, and biochemical parameters to estimate statistical 10-year CHD probability.
               </p>
             </div>
 
@@ -502,14 +518,14 @@ const HeartDiseaseForm = () => {
                   <span className="flex items-center justify-center w-5 h-5 rounded-full bg-rose-500/20 text-rose-300 text-xs">4</span>
                   Vitals & Clinical Biomarkers
                 </div>
-                <span className="text-[11px] text-slate-500">Normal reference in labels</span>
+                <span className="text-[11px] text-slate-400">General reference in labels</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <label className="text-xs font-medium text-slate-300">Systolic BP</label>
-                    <span className="text-[10px] text-emerald-400/90">&lt;120 mmHg</span>
+                    <span className="text-[10px] text-slate-400">Ref: &lt;120 mmHg</span>
                   </div>
                   <input
                     type="number"
@@ -526,7 +542,7 @@ const HeartDiseaseForm = () => {
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <label className="text-xs font-medium text-slate-300">Diastolic BP</label>
-                    <span className="text-[10px] text-emerald-400/90">&lt;80 mmHg</span>
+                    <span className="text-[10px] text-slate-400">Ref: &lt;80 mmHg</span>
                   </div>
                   <input
                     type="number"
@@ -543,7 +559,7 @@ const HeartDiseaseForm = () => {
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <label className="text-xs font-medium text-slate-300">Total Cholesterol</label>
-                    <span className="text-[10px] text-emerald-400/90">&lt;200 mg/dL</span>
+                    <span className="text-[10px] text-slate-400">Ref: &lt;200 mg/dL</span>
                   </div>
                   <input
                     type="number"
@@ -560,7 +576,7 @@ const HeartDiseaseForm = () => {
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <label className="text-xs font-medium text-slate-300">Body Mass Index (BMI)</label>
-                    <span className="text-[10px] text-emerald-400/90">18.5 - 24.9</span>
+                    <span className="text-[10px] text-slate-400">Ref: 18.5 - 24.9</span>
                   </div>
                   <input
                     type="number"
@@ -577,7 +593,7 @@ const HeartDiseaseForm = () => {
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <label className="text-xs font-medium text-slate-300">Heart Rate</label>
-                    <span className="text-[10px] text-emerald-400/90">60 - 100 bpm</span>
+                    <span className="text-[10px] text-slate-400">Ref: 60 - 100 bpm</span>
                   </div>
                   <input
                     type="number"
@@ -593,7 +609,7 @@ const HeartDiseaseForm = () => {
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <label className="text-xs font-medium text-slate-300">Fasting Glucose</label>
-                    <span className="text-[10px] text-emerald-400/90">70 - 99 mg/dL</span>
+                    <span className="text-[10px] text-slate-400">Ref: 70 - 99 mg/dL</span>
                   </div>
                   <input
                     type="number"
@@ -639,11 +655,11 @@ const HeartDiseaseForm = () => {
         <div className="lg:col-span-5 xl:col-span-4 sticky top-6">
           <div className="glass-card rounded-2xl p-6 sm:p-7 border border-slate-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                 <svg className="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                Predictive Diagnostics
+                Risk Assessment Summary
               </h3>
               {prediction && (
                 <span className="text-[10px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
@@ -661,7 +677,7 @@ const HeartDiseaseForm = () => {
                 </div>
                 <h4 className="text-base font-semibold text-slate-200">No Assessment Yet</h4>
                 <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-                  Click a quick-test profile at the top or fill in the clinical form to calculate cardiac risk.
+                  Click a demo profile at the top or fill in the clinical form to evaluate 10-year CHD risk.
                 </p>
               </div>
             ) : (
@@ -696,7 +712,7 @@ const HeartDiseaseForm = () => {
                         {prediction.confidence}%
                       </span>
                       <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
-                        Probability
+                        Estimated Probability
                       </span>
                     </div>
                   </div>
@@ -718,23 +734,42 @@ const HeartDiseaseForm = () => {
                     </span>
                     <p className="text-xs text-slate-400 mt-2">
                       {prediction.risk === 'High Risk'
-                        ? 'High probability of developing coronary heart disease within the next 10 years based on Framingham criteria.'
-                        : 'Low projected risk of 10-year coronary events under current physiological and behavioral parameters.'}
+                        ? 'Higher estimated probability of developing coronary heart disease within the next 10 years based on the Framingham dataset.'
+                        : 'Lower estimated probability of developing coronary heart disease within 10 years under current physiological markers.'}
                     </p>
+                  </div>
+                </div>
+
+                {/* Explicit Technical Separation */}
+                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Predicted Probability:</span>
+                    <span className="font-semibold text-slate-200">{(prediction.probability).toFixed(4)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Operating Decision Threshold:</span>
+                    <span className="font-semibold text-slate-200">{prediction.threshold.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Application Risk Band:</span>
+                    <span className="font-semibold text-slate-200">{prediction.risk}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-800">
+                    Risk bands are provided for educational and demonstration purposes and do not represent validated clinical treatment thresholds.
                   </div>
                 </div>
 
                 {/* Contributing Risk Factors */}
                 <div className="border-t border-slate-800/80 pt-4">
                   <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2.5">
-                    Identified Clinical Flags
+                    Notable Feature Contributors
                   </h4>
                   {(() => {
                     const factors = getRiskBreakdown(prediction.inputs);
                     if (factors.length === 0) {
                       return (
                         <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs">
-                          All submitted biometric values fall within healthy baseline ranges.
+                          All submitted biometric values fall within general healthy reference ranges.
                         </div>
                       );
                     }
@@ -765,7 +800,7 @@ const HeartDiseaseForm = () => {
                     onClick={() => setPrediction(null)}
                     className="w-full py-2 px-4 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors"
                   >
-                    Clear Results & Test Another Patient
+                    Clear Results & Test Another Profile
                   </button>
                 </div>
               </div>
@@ -773,7 +808,7 @@ const HeartDiseaseForm = () => {
 
             {/* Medical Disclaimer */}
             <div className="mt-6 p-3 rounded-xl bg-slate-900/60 border border-slate-800/70 text-[10px] text-slate-500 leading-relaxed">
-              <strong className="text-slate-400">Notice:</strong> This model is built for academic research and educational screening using the Framingham Heart Study dataset. It is not intended as a substitute for professional clinical diagnosis.
+              <strong className="text-slate-400">Notice:</strong> This model is built for academic research and educational demonstration using the Framingham Heart Study dataset. It is not a certified medical device and must not be used as a substitute for professional clinical diagnosis or medical decisions.
             </div>
           </div>
         </div>

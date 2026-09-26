@@ -1,4 +1,4 @@
-# CardioPulse: 10-Year Coronary Heart Disease (CHD) Prediction System
+# CardioPulse: 10-Year Coronary Heart Disease (CHD) Risk Estimation System
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
@@ -6,9 +6,9 @@
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38bdf8.svg)](https://tailwindcss.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-An end-to-end clinical machine learning and diagnostic application built to forecast the **10-year risk of Coronary Heart Disease (CHD)** based on epidemiological data from the **Framingham Heart Study**. 
+An end-to-end machine learning research application developed to estimate the **10-year risk of Coronary Heart Disease (CHD)** based on epidemiological data from the **Framingham Heart Study**. 
 
-This system integrates data exploration, class imbalance correction (SMOTE-ENN), model evaluation, Explainable AI (XAI with SHAP & LIME), a lightweight Express REST API microservice, and a modern glassmorphic React interface.
+This system integrates data exploration, class imbalance correction (SMOTE-ENN), model evaluation, Explainable AI (XAI with SHAP & LIME), a dual-inference architecture (in-browser client calculation alongside an Express REST API microservice on Port 5000), and an interactive glassmorphic React interface.
 
 ---
 
@@ -18,7 +18,7 @@ This system integrates data exploration, class imbalance correction (SMOTE-ENN),
 - [Clinical Parameters (15 Features)](#clinical-parameters-15-features)
 - [Quick Start Guide](#quick-start-guide)
   - [1. Machine Learning Notebooks](#1-machine-learning-notebooks)
-  - [2. Starting the API Backend](#2-starting-the-api-backend)
+  - [2. Starting the API Backend (Port 5000)](#2-starting-the-api-backend-port-5000)
   - [3. Starting the Frontend UI](#3-starting-the-frontend-ui)
 - [Ethical & Clinical Disclaimer](#ethical--clinical-disclaimer)
 
@@ -27,20 +27,20 @@ This system integrates data exploration, class imbalance correction (SMOTE-ENN),
 ## Architecture Overview
 
 ```text
-┌─────────────────────────┐         ┌─────────────────────────┐
-│     React Frontend      │  HTTP   │   Express API Server    │
-│  (CardioPulse Dark UI)  ├────────►│     (Port 3000)         │
-│  - 15 Clinical Inputs   │  POST   │  - Input Validation     │
-│  - Quick-Test Profiles  │         │  - Feature Normalizer   │
-│  - Radial Risk Gauge    │◄────────┤  - Model Inference      │
-└─────────────────────────┘  JSON   └───────────┬─────────────┘
-                                                │
-                                                ▼
-                                    ┌─────────────────────────┐
-                                    │ Trained Logistic Model  │
-                                    │ (lr_model_export.json)  │
-                                    │ Calibrated on Framingham│
-                                    └─────────────────────────┘
+┌─────────────────────────────────┐         ┌─────────────────────────┐
+│         React Frontend          │  HTTP   │   Express API Server    │
+│    (CardioPulse Dark UI)        ├────────►│       (Port 5000)       │
+│  - 15 Clinical Parameters       │  POST   │  - Input Validation     │
+│  - Demo Patient Profiles        │         │  - Feature Normalizer   │
+│  - In-Browser Inference Engine  │◄────────┤  - Model Inference      │
+│  - Radial Risk Gauge & Summary  │  JSON   └───────────┬─────────────┘
+└─────────────────────────────────┘                     │
+                                                        ▼
+                                            ┌─────────────────────────┐
+                                            │ Trained Logistic Model  │
+                                            │ (lr_model_export.json)  │
+                                            │ Framingham Study Cohort │
+                                            └─────────────────────────┘
 ```
 
 ---
@@ -54,12 +54,12 @@ Heart-Disease-Prediction/
 ├── README.md                       # Complete documentation
 │
 ├── codes/                          # Machine Learning Core & Backend Microservice
-│   ├── api/                        # Express API Microservice
+│   ├── api/                        # Express API Microservice (Port 5000)
 │   │   ├── model/                  # Exported weights, scaler parameters, & JS inference
 │   │   │   ├── lr_model_export.json
 │   │   │   └── predict.js
 │   │   ├── package.json
-│   │   └── server.js               # REST API Server (Port 3000)
+│   │   └── server.js               # REST API Server (Port 5000)
 │   │
 │   ├── data/                       # Datasets
 │   │   ├── raw/                    # Raw Framingham dataset
@@ -90,7 +90,7 @@ Heart-Disease-Prediction/
     │   └── index.html              # Typography & Favicon setup
     ├── src/
     │   ├── App.jsx                 # Application shell & real-time API health monitor
-    │   ├── HeartDiseaseForm.jsx    # 15-parameter form, quick-test profiles, SVG risk gauge
+    │   ├── HeartDiseaseForm.jsx    # 15-parameter form, demo profiles, dual-inference engine
     │   ├── index.css               # Glassmorphism tokens & custom animations
     │   └── index.js
     ├── package.json
@@ -114,12 +114,12 @@ The prediction engine consumes 15 validated biometric and demographic inputs:
 | `prevalentStroke`| History | Binary | Prior history of stroke (`1` = Yes, `0` = No) |
 | `prevalentHyp` | History | Binary | Prevalent hypertension diagnosis (`1` = Yes, `0` = No) |
 | `diabetes` | History | Binary | Diagnosed diabetes mellitus (`1` = Yes, `0` = No) |
-| `totChol` | Biomarker | Continuous | Total Cholesterol in mg/dL (Normal: < 200 mg/dL) |
-| `sysBP` | Vitals | Continuous | Systolic Blood Pressure in mmHg (Normal: < 120 mmHg) |
-| `diaBP` | Vitals | Continuous | Diastolic Blood Pressure in mmHg (Normal: < 80 mmHg) |
-| `BMI` | Biomarker | Continuous | Body Mass Index in kg/m² (Normal: 18.5 – 24.9) |
-| `heartRate` | Vitals | Continuous | Resting heart rate in beats per minute (Normal: 60 – 100 bpm) |
-| `glucose` | Biomarker | Continuous | Fasting blood glucose in mg/dL (Normal: 70 – 99 mg/dL) |
+| `totChol` | Biomarker | Continuous | Total Cholesterol in mg/dL (General reference: < 200 mg/dL) |
+| `sysBP` | Vitals | Continuous | Systolic Blood Pressure in mmHg (General reference: < 120 mmHg) |
+| `diaBP` | Vitals | Continuous | Diastolic Blood Pressure in mmHg (General reference: < 80 mmHg) |
+| `BMI` | Biomarker | Continuous | Body Mass Index in kg/m² (General reference: 18.5 – 24.9) |
+| `heartRate` | Vitals | Continuous | Resting heart rate in beats per minute (General reference: 60 – 100 bpm) |
+| `glucose` | Biomarker | Continuous | Fasting blood glucose in mg/dL (General reference: 70 – 99 mg/dL) |
 
 ---
 
@@ -148,16 +148,16 @@ Navigate to the `notebooks/` directory and run the notebooks in sequence (`01` t
 
 ---
 
-### 2. Starting the API Backend
-The Express API provides model scoring and health endpoints:
+### 2. Starting the API Backend (Port 5000)
+The Express API provides model scoring and health endpoints on Port 5000:
 ```bash
 cd codes/api
 npm install
 node server.js
 ```
-The server will start on `http://localhost:3000`.
-- Health check: `GET http://localhost:3000/`
-- Prediction: `POST http://localhost:3000/predict`
+The server will start on `http://localhost:5000`.
+- Health check: `GET http://localhost:5000/`
+- Prediction: `POST http://localhost:5000/predict`
 
 ---
 
@@ -170,8 +170,9 @@ npm start
 ```
 Open [http://localhost:3001](http://localhost:3001) in your browser.
 
-- Use the **Quick-Test Patient Profiles** at the top (`Low Risk Patient`, `Moderate / Borderline`, `High Risk Patient`) for instant 1-click clinical simulations.
+- Use the **Demo Patient Profiles** at the top (`Low-Risk Demo Profile`, `Moderate-Risk Demo Profile`, `Higher-Risk Demo Profile`) for instant 1-click clinical simulations.
 - Monitor real-time API connectivity via the status pill in the top header.
+- If the backend is not running, the application automatically uses its embedded in-browser calculation engine.
 
 ---
 
